@@ -1,0 +1,17 @@
+﻿{
+  "name": "task-manager-api-24cs042",
+  "version": "1.0.0",
+  "description": "RESTful Task Management API with Node.js, Express, and Middleware Pipeline - Practical 4",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["express", "rest-api", "crud", "middleware", "cse304", "itue301"],
+  "author": "Jugal Kshatriya (24CS042)",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  }
+}

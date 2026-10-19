@@ -1,0 +1,70 @@
+﻿# ==============================================================================
+# Charotar University of Science and Technology (CHARUSAT)
+# CSPIT - Department of Computer Science & Engineering
+# ITUE301: Advanced Web Development Frameworks
+# Practical 11: Containerization with Docker and Docker Compose
+# Student: Jugal Kshatriya (ID: 24CS042)
+# ==============================================================================
+
+services:
+  # 1. Official MongoDB Database Service
+  mongodb:
+    image: mongo:latest
+    container_name: task_manager_mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      # Supplementary Problem 3: Named volume for MongoDB data persistence
+      - mongodb_data:/data/db
+    networks:
+      - app-network
+    environment:
+      - MONGO_INITDB_DATABASE=task_manager_24cs042
+
+  # 2. Node.js / Express Backend Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: task_manager_backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - MONGO_URI=mongodb://mongodb:27017/task_manager_24cs042
+      - JWT_SECRET=supersecretjwtkey_24cs042_jugal_practical11
+      - JWT_EXPIRES_IN=1h
+      - CACHE_TTL_SECONDS=60
+      - NODE_ENV=production
+    depends_on:
+      - mongodb
+    networks:
+      - app-network
+
+  # 3. React Frontend Service (Multi-stage build)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: task_manager_frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:5000
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+# Internal Docker bridge network for inter-container communication
+networks:
+  app-network:
+    driver: bridge
+
+# Named volume for MongoDB persistence
+volumes:
+  mongodb_data:
+    driver: local

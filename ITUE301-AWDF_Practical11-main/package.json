@@ -1,0 +1,13 @@
+﻿{
+  "name": "task-manager-jwt-auth-24cs042",
+  "version": "1.0.0",
+  "description": "JWT-Based Authentication and Middleware Pipeline - Practical 7",
+  "scripts": {
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm run dev",
+    "install:all": "cd backend && npm install && cd ../frontend && npm install"
+  },
+  "keywords": ["jwt", "bcrypt", "authentication", "middleware", "express", "react", "itue301"],
+  "author": "Jugal Kshatriya (24CS042)",
+  "license": "ISC"
+}

@@ -1,0 +1,13 @@
+﻿{
+  "name": "full-stack-task-manager-24cs042",
+  "version": "1.0.0",
+  "description": "Full Stack Integration of React frontend with Node/Express/MongoDB backend - Practical 6",
+  "scripts": {
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm run dev",
+    "install:all": "cd backend && npm install && cd ../frontend && npm install"
+  },
+  "keywords": ["mern", "full-stack", "react", "express", "mongodb", "mongoose", "itue301"],
+  "author": "Jugal Kshatriya (24CS042)",
+  "license": "ISC"
+}
