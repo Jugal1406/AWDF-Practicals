@@ -1,4 +1,4 @@
-﻿# Event-Driven Architecture & Async Processing Report: Practical 10
+# Event-Driven Architecture & Async Processing Report: Practical 10
 
 **Student**: Jugal Kshatriya (24CS042)  
 **Course**: ITUE301 - Advanced Web Development Frameworks  

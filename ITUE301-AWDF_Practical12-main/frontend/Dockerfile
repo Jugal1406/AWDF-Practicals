@@ -1,4 +1,4 @@
-﻿# ==============================================================================
+# ==============================================================================
 # Practical 11: Containerization with Docker & Docker Compose
 # Student: Jugal Kshatriya (24CS042)
 # Multi-stage Dockerfile for React (Vite) Frontend

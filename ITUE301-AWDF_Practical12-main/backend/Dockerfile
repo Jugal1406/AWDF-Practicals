@@ -1,4 +1,4 @@
-﻿# Practical 11: Containerization with Docker & Docker Compose
+# Practical 11: Containerization with Docker & Docker Compose
 # Student: Jugal Kshatriya (24CS042)
 # Node.js backend container definition
 

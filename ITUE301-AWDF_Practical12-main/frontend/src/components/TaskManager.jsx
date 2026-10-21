@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, lazy, Suspense, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, lazy, Suspense, useMemo, useCallback } from 'react';
 import {
   getTasks,
   createTask,

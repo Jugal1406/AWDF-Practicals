@@ -1,4 +1,4 @@
-﻿const http = require('http');
+const http = require('http');
 
 function post(path, data, token) {
   return new Promise((resolve, reject) => {

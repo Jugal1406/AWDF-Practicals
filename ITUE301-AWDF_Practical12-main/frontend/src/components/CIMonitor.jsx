@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 
 export default function CIMonitor() {
   const [activeTab, setActiveTab] = useState('pipeline');
@@ -50,7 +50,7 @@ export default function CIMonitor() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           {/* GitHub Actions Live Badge */}
           <a
-            href="https://github.com/Jugal1406/ITUE301-AWDF_Practical12/actions/workflows/ci.yml"
+            href="https://github.com/Jugal1406/AWDF-Practicals/actions/workflows/practical12-ci.yml"
             target="_blank"
             rel="noopener noreferrer"
             style={{ textDecoration: 'none' }}
@@ -73,7 +73,7 @@ export default function CIMonitor() {
           </a>
 
           <a
-            href="https://github.com/Jugal1406/ITUE301-AWDF_Practical12/actions"
+            href="https://github.com/Jugal1406/AWDF-Practicals/actions/workflows/practical12-ci.yml"
             target="_blank"
             rel="noopener noreferrer"
             style={{
@@ -144,10 +144,10 @@ export default function CIMonitor() {
             </div>
             <div style={{ fontSize: '0.82rem', color: '#cbd5e1', lineHeight: '1.6' }}>
               <div><strong>Triggers:</strong> <code>push</code> &amp; <code>pull_request</code> to <code>main</code></div>
-              <div><strong>Environment:</strong> <code>ubuntu-latest</code> (Node 20)</div>
-              <div><strong>Step 1:</strong> Checkout code (<code>actions/checkout@v4</code>)</div>
+              <div><strong>Environment:</strong> <code>ubuntu-latest</code> (Node 22)</div>
+              <div><strong>Step 1:</strong> Checkout code (<code>actions/checkout@v5</code>)</div>
               <div><strong>Step 2:</strong> Cache &amp; Install (<code>npm ci</code>)</div>
-              <div><strong>Step 3:</strong> Static Analysis (<code>npm run lint</code>)</div>
+              <div><strong>Step 3:</strong> oxlint on backend + frontend (matrix)</div>
             </div>
           </div>
 
@@ -160,9 +160,9 @@ export default function CIMonitor() {
             borderTop: '3px solid #22c55e',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ fontWeight: 700, color: '#86efac', fontSize: '0.95rem' }}>2. Test Execution Job</span>
+              <span style={{ fontWeight: 700, color: '#86efac', fontSize: '0.95rem' }}>2. Test, Build &amp; Deploy</span>
               <span style={{ fontSize: '0.75rem', background: '#14532d', color: '#dcfce7', padding: '2px 8px', borderRadius: '12px' }}>
-                Job: build-and-test
+                Jobs: test → build → deploy
               </span>
             </div>
             <div style={{ fontSize: '0.82rem', color: '#cbd5e1', lineHeight: '1.6' }}>
@@ -170,7 +170,8 @@ export default function CIMonitor() {
               <div><strong>Test Runner:</strong> Jest 30 + Supertest 7</div>
               <div><strong>Execution:</strong> <code>npm test</code> (in <code>./backend</code>)</div>
               <div><strong>Assertions:</strong> Status codes, JSON shapes, auth 401s</div>
-              <div><strong>Output:</strong> Pass/Fail report with execution logs</div>
+              <div><strong>Build:</strong> <code>vite build</code> → <code>frontend-dist</code> artifact</div>
+              <div><strong>Deploy:</strong> Docker images → <code>ghcr.io</code> (push to main only)</div>
             </div>
           </div>
 

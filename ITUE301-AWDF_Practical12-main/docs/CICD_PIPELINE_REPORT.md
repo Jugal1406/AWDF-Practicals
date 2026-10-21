@@ -1,112 +1,66 @@
-﻿# Practical 12: CI/CD Pipeline with GitHub Actions
+# Practical 12: CI/CD Pipeline with GitHub Actions
 **Course**: Advanced Web Development Frameworks (ITUE301)  
 **Student**: Jugal Kshatriya (ID: 24CS042)  
 **Department**: Department of Computer Science & Engineering, CSPIT, CHARUSAT  
-**Repository**: [Jugal1406/ITUE301-AWDF_Practical12](https://github.com/Jugal1406/ITUE301-AWDF_Practical12)  
-**Pipeline Status**: [![CI Pipeline](https://github.com/Jugal1406/ITUE301-AWDF_Practical12/actions/workflows/ci.yml/badge.svg)](https://github.com/Jugal1406/ITUE301-AWDF_Practical12/actions/workflows/ci.yml)
+**Repository**: [Jugal1406/AWDF-Practicals](https://github.com/Jugal1406/AWDF-Practicals/tree/main/ITUE301-AWDF_Practical12-main)  
+**Pipeline Status**: [![CI Pipeline](https://github.com/Jugal1406/AWDF-Practicals/actions/workflows/practical12-ci.yml/badge.svg)](https://github.com/Jugal1406/AWDF-Practicals/actions/workflows/practical12-ci.yml)
 
 ---
 
 ## 1. Practical Overview & Objectives
 - **Course Outcome (CO)**: CO5 / PO3, PO5
-- **Objective**: To automate static code analysis, dependency installation, and end-to-end automated testing using a Continuous Integration (CI) pipeline powered by GitHub Actions.
+- **Objective**: To automate testing and deployment of the application using a CI/CD pipeline powered by GitHub Actions.
 - **Key Deliverables**:
-  - Declarative `.github/workflows/ci.yml` workflow.
-  - Multi-job pipeline (`lint` job + `build-and-test` job).
+  - Root-level workflow `.github/workflows/practical12-ci.yml`, scoped to this folder with `working-directory` and a `paths` filter.
+  - Four chained jobs: `lint` → `test` → `build` → `deploy`.
+  - Real static analysis with oxlint on backend and frontend (matrix job).
   - Automated Jest + Supertest suite with 5 integration tests.
-  - Verification of both a deliberately failing pipeline (Red X) and a resolved pipeline (Green Checkmark).
+  - Continuous Deployment: Docker images pushed to GitHub Container Registry on every green push to `main`.
+  - A deliberately failing run (red X) and the fixed run (green checkmark).
 
 ---
 
 ## 2. CI/CD Architecture & Pipeline Flow
 
 ```
-                 GIT COMMIT & PUSH TO MAIN / PULL REQUEST
+          push / pull_request to main  (paths: ITUE301-AWDF_Practical12-main/**)
                                    │
                                    ▼
-                   GitHub Actions Event Trigger (on: push / PR)
-                                   │
-                                   ▼
-             ┌───────────────────────────────────────────┐
-             │            Job 1: LINT AUDIT              │
-             │           (ubuntu-latest, Node 20)        │
-             ├───────────────────────────────────────────┤
-             │ 1. Checkout Repository (actions/checkout) │
-             │ 2. Setup Node.js (actions/setup-node)     │
-             │ 3. Clean Install (npm ci)                 │
-             │ 4. Run Static Code Lint (npm run lint)    │
-             └─────────────────────┬─────────────────────┘
-                                   │
-                                   ▼ (needs: lint must pass)
-             ┌───────────────────────────────────────────┐
-             │       Job 2: BUILD & AUTOMATED TESTS      │
-             │           (ubuntu-latest, Node 20)        │
-             ├───────────────────────────────────────────┤
-             │ 1. Checkout Repository (actions/checkout) │
-             │ 2. Setup Node.js 20 with npm caching      │
-             │ 3. Install Dependencies (npm ci)          │
-             │ 4. Run Automated Test Suite (npm test)    │
-             │ 5. Generate Execution Report              │
-             └─────────────────────┬─────────────────────┘
-                                   │
-                        ┌──────────┴──────────┐
-                        ▼                     ▼
-               ❌ Test Failed         ✅ All Tests Pass
-             (Red X on GitHub)      (Green Checkmark on GitHub)
+        ┌──────────────────────────────────────────────────────┐
+        │ Job 1: LINT   matrix [backend, frontend]  (parallel)  │
+        │ checkout → setup-node 22 (npm cache) → npm ci → oxlint│
+        └──────────────────────────┬───────────────────────────┘
+                                   ▼ needs: lint
+        ┌──────────────────────────────────────────────────────┐
+        │ Job 2: TEST   backend: npm ci → jest --ci (5 tests)   │
+        └──────────────────────────┬───────────────────────────┘
+                                   ▼ needs: test
+        ┌──────────────────────────────────────────────────────┐
+        │ Job 3: BUILD  frontend: vite build → upload artifact  │
+        └──────────────────────────┬───────────────────────────┘
+                                   ▼ needs: build, if: push to main
+        ┌──────────────────────────────────────────────────────┐
+        │ Job 4: DEPLOY matrix [backend, frontend]              │
+        │ docker login ghcr.io → buildx → push :latest + :sha   │
+        └──────────────────────────────────────────────────────┘
 ```
+
+A failure at any stage stops every later stage. For example, a failing test means nothing is built or deployed.
 
 ---
 
-## 3. Workflow Implementation (`.github/workflows/ci.yml`)
+## 3. Workflow Implementation
 
-```yaml
-name: CI Pipeline
+See [`/.github/workflows/practical12-ci.yml`](../../.github/workflows/practical12-ci.yml) for the full file. Design choices:
 
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
-jobs:
-  lint:
-    name: Code Quality & Lint Audit
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-          cache-dependency-path: 'backend/package-lock.json'
-      - name: Install Dependencies
-        working-directory: ./backend
-        run: npm ci
-      - name: Run Linter
-        working-directory: ./backend
-        run: npm run lint
-
-  build-and-test:
-    name: Build & Automated Tests
-    runs-on: ubuntu-latest
-    needs: lint
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-          cache-dependency-path: 'backend/package-lock.json'
-      - name: Install Dependencies
-        working-directory: ./backend
-        run: npm ci
-      - name: Run Tests
-        working-directory: ./backend
-        run: npm test
-        env:
-          NODE_ENV: test
-          JWT_SECRET: supersecret_ci_test_key_24cs042
-```
+| Decision | Why |
+| :--- | :--- |
+| Workflow at repo root, not inside this folder | GitHub ignores `.github/workflows` in subdirectories. |
+| `paths:` filter | This repo holds 13 practicals, and only Practical 12 changes should trigger this pipeline. |
+| `needs:` chain | Enforces lint → test → build → deploy ordering. |
+| `if: github.event_name == 'push'` on deploy | Pull requests are verified but never deployed. |
+| `permissions: packages: write` | Lets the built-in `GITHUB_TOKEN` push to GHCR, so no extra secrets are needed. |
+| `concurrency` + `cancel-in-progress` | A newer push cancels a stale, still-running pipeline. |
 
 ---
 
@@ -150,7 +104,7 @@ test('GET / returns 200 and confirms API metadata', async () => {
 });
 ```
 - **Observed Result on GitHub Actions**:
-  - Job `build-and-test` exited with code `1`.
+  - Job `Automated Tests (Jest)` exited with code `1`, and `build` and `deploy` were skipped.
   - GitHub displays a prominent **Red X** next to the commit.
   - Pull requests targeting `main` are blocked from merging.
 
@@ -160,8 +114,8 @@ Reverting the expected status back to `200`:
 expect(res.statusCode).toBe(200);
 ```
 - **Observed Result on GitHub Actions**:
-  - All 5 tests pass in ~9.8s.
-  - Job `build-and-test` exits with code `0`.
+  - All 5 tests pass.
+  - All four jobs succeed, and new images are pushed to GHCR.
   - GitHub displays a **Green Checkmark** and updates the status badge to `passing`.
 
 ---
@@ -171,7 +125,7 @@ expect(res.statusCode).toBe(200);
 ### Q1: What is the difference between Continuous Integration and Continuous Deployment, and which one does this practical actually demonstrate?
 > - **Continuous Integration (CI)**: The automated practice of frequently merging code changes into a shared repository, where every push triggers automated build, linting, and testing pipelines to detect regressions immediately.
 > - **Continuous Deployment (CD)**: The automated practice of automatically packaging and releasing verified code directly to production environments (e.g. AWS, Render, Docker Hub) without human intervention.
-> - **Demonstrated in this Practical**: This practical implements **Continuous Integration (CI)**, verifying code quality through multi-job automated linting and unit/integration testing on push and pull requests.
+> - **Demonstrated in this Practical**: Both. **CI** covers the lint and test jobs on every push and PR. **Continuous Delivery/Deployment** covers the deploy job, which publishes versioned Docker images to GHCR automatically after a green push to `main`. Pushing a deployable artifact to a registry is CD up to the registry. Fully automatic release to a live server would need one more step (e.g. a Render or Railway deploy hook pulling `:latest`).
 
 ### Q2: Why does running tests automatically on every push catch problems earlier than testing manually before a release?
 > 1. **Immediate Feedback Loop**: Developers are notified within 60 seconds of pushing broken code while context is fresh in their minds, rather than discovering bugs weeks later during release QA.

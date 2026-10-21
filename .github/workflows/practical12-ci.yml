@@ -1,0 +1,180 @@
+# ==============================================================================
+# CHARUSAT - CSPIT - Department of Computer Science & Engineering
+# ITUE301: Advanced Web Development Frameworks
+# Practical 12: CI/CD Pipeline with GitHub Actions
+# Student: Jugal Kshatriya (ID: 24CS042)
+#
+# GitHub only reads workflows from <repo-root>/.github/workflows, so this file
+# lives at the root of AWDF-Practicals and points every job at the Practical 12
+# folder. The `paths` filter means edits to other practicals don't trigger it.
+#
+# Pipeline:  lint ──► test ──► build ──► deploy (push to main only)
+# ==============================================================================
+name: Practical 12 CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ITUE301-AWDF_Practical12-main/**'
+      - '.github/workflows/practical12-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'ITUE301-AWDF_Practical12-main/**'
+      - '.github/workflows/practical12-ci.yml'
+  workflow_dispatch: # allows a manual "Run workflow" button in the Actions tab
+
+# A newer push to the same branch cancels the older, still-running pipeline
+concurrency:
+  group: p12-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_DIR: ITUE301-AWDF_Practical12-main
+  NODE_VERSION: 22
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1 - Static analysis (oxlint) on backend AND frontend, run in parallel
+  # ---------------------------------------------------------------------------
+  lint:
+    name: Lint (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [backend, frontend]
+    defaults:
+      run:
+        working-directory: ${{ env.APP_DIR }}/${{ matrix.service }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ${{ env.APP_DIR }}/${{ matrix.service }}/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run oxlint
+        run: npm run lint
+
+  # ---------------------------------------------------------------------------
+  # Job 2 - Automated backend tests (Jest + Supertest)
+  # ---------------------------------------------------------------------------
+  test:
+    name: Automated Tests (Jest)
+    runs-on: ubuntu-latest
+    needs: lint
+    defaults:
+      run:
+        working-directory: ${{ env.APP_DIR }}/backend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ${{ env.APP_DIR }}/backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run test suite
+        run: npm test -- --ci
+        env:
+          NODE_ENV: test
+          JWT_SECRET: ci_only_secret_24cs042
+
+  # ---------------------------------------------------------------------------
+  # Job 3 - Production build of the React frontend, kept as a downloadable artifact
+  # ---------------------------------------------------------------------------
+  build:
+    name: Build Frontend (Vite)
+    runs-on: ubuntu-latest
+    needs: test
+    defaults:
+      run:
+        working-directory: ${{ env.APP_DIR }}/frontend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ${{ env.APP_DIR }}/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Upload dist/ as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: ${{ env.APP_DIR }}/frontend/dist
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # Job 4 - Continuous Deployment: build Docker images and publish them to
+  # GitHub Container Registry (ghcr.io). Runs only after a push to main has
+  # passed lint, test and build - never on pull requests.
+  # ---------------------------------------------------------------------------
+  deploy:
+    name: Deploy Images to GHCR
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        service: [backend, frontend]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Compute lowercase image name
+        id: img
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/awdf-p12-${{ matrix.service }}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push ${{ matrix.service }} image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.APP_DIR }}/${{ matrix.service }}
+          push: true
+          tags: |
+            ${{ steps.img.outputs.name }}:latest
+            ${{ steps.img.outputs.name }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+      - name: Deployment summary
+        run: |
+          echo "### Deployed \`${{ matrix.service }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Pull with: \`docker pull ${{ steps.img.outputs.name }}:latest\`" >> "$GITHUB_STEP_SUMMARY"

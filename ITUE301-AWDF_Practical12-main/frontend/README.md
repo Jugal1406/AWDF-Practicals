@@ -1,4 +1,4 @@
-﻿# ITUE301 - Advanced Web Development Frameworks
+# ITUE301 - Advanced Web Development Frameworks
 ## Practical 3: API Integration and Data Rendering in React
 
 ### Student Details

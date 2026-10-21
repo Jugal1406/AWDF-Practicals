@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Spinner from './Spinner';
 import ErrorMessage from './ErrorMessage';
 

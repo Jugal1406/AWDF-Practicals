@@ -1,6 +1,6 @@
-﻿# Practical 12: CI/CD Pipeline with GitHub Actions
+# Practical 12: CI/CD Pipeline with GitHub Actions
 
-[![CI Pipeline](https://github.com/Jugal1406/ITUE301-AWDF_Practical12/actions/workflows/ci.yml/badge.svg)](https://github.com/Jugal1406/ITUE301-AWDF_Practical12/actions/workflows/ci.yml)
+[![CI Pipeline](https://github.com/Jugal1406/AWDF-Practicals/actions/workflows/practical12-ci.yml/badge.svg)](https://github.com/Jugal1406/AWDF-Practicals/actions/workflows/practical12-ci.yml)
 
 **Course**: Advanced Web Development Frameworks (ITUE301)  
 **Department**: Department of Computer Science and Engineering  
@@ -8,42 +8,41 @@
 **Academic Year**: 2025–2026  
 **Student Name**: Jugal Kshatriya  
 **Student ID**: 24CS042  
-**GitHub Repository**: [Jugal1406/ITUE301-AWDF_Practical12](https://github.com/Jugal1406/ITUE301-AWDF_Practical12)
+**GitHub Repository**: [Jugal1406/AWDF-Practicals](https://github.com/Jugal1406/AWDF-Practicals/tree/main/ITUE301-AWDF_Practical12-main)
 
 ---
 
 ## 🎯 Practical Objective
-To automate testing and code-quality verification of the full-stack Task Management application using a Continuous Integration (CI) pipeline with **GitHub Actions**. The pipeline automatically executes static linting and automated Jest/Supertest integration suites on every push and pull request to the `main` branch.
+To automate testing and deployment of the full-stack Task Management application using a CI/CD pipeline built with **GitHub Actions**. Every push and pull request to `main` that touches this practical runs static analysis and the automated test suite. A green push to `main` then builds the frontend and publishes Docker images to GitHub Container Registry.
+
+> **Workflow location:** GitHub only reads workflows from the repository root, so the pipeline lives at
+> [`/.github/workflows/practical12-ci.yml`](../.github/workflows/practical12-ci.yml) and targets this folder with `working-directory` plus a `paths` filter.
 
 ---
 
 ## 🏗️ GitHub Actions Pipeline Architecture
 
 ```
-git push origin main / pull_request
+git push origin main / pull_request  (only when ITUE301-AWDF_Practical12-main/** changes)
  │
  ▼
-GitHub Actions Trigger (.github/workflows/ci.yml)
- │
- ├── Job 1: Code Quality & Lint Audit (ubuntu-latest)
- │    ├── Checkout code (actions/checkout@v4)
- │    ├── Setup Node.js 20 with npm caching
- │    ├── npm ci
- │    └── npm run lint
- │
- └── Job 2: Build & Automated Tests (needs: lint)
-      ├── Checkout code (actions/checkout@v4)
-      ├── Setup Node.js 20 with npm caching
-      ├── npm ci
-      └── npm test (Jest & Supertest test suite)
-           ├── GET / (API Metadata & Student ID)
-           ├── GET /health (Microservice Health Status)
-           ├── GET /events/history (Event-Driven Telemetry)
-           ├── GET /tasks (401 Unauthorized Security Guard)
-           └── GET /undefined (404 Error Handler)
- │
+Job 1: Lint  ── matrix: [backend, frontend] run in parallel ── npm ci → oxlint
+ │  needs: lint
  ▼
-Pipeline Result: Green Checkmark (Pass) or Red X (Fail)
+Job 2: Automated Tests ── backend: npm ci → jest --ci (5 Supertest API tests)
+ │  needs: test
+ ▼
+Job 3: Build Frontend ── vite build → upload "frontend-dist" artifact
+ │  needs: build   (if: push to main — skipped on pull requests)
+ ▼
+Job 4: Deploy ── matrix: [backend, frontend]
+         docker buildx → push ghcr.io/jugal1406/awdf-p12-<service>:{latest, <sha>}
+```
+
+Pull a deployed image:
+```bash
+docker pull ghcr.io/jugal1406/awdf-p12-backend:latest
+docker pull ghcr.io/jugal1406/awdf-p12-frontend:latest
 ```
 
 ---
@@ -70,20 +69,16 @@ npm run test:backend
 
 ## 💡 Supplementary Problems Implemented
 
-1. **Pre-test Linter Job (`lint`)**:
-   - Added a separate `lint` job running static code analysis before tests.
-   - The test job specifies `needs: lint` so tests execute only if lint checks pass.
-
-2. **Trigger Configuration for Pull Requests**:
-   - Workflow runs on both `push: branches: [main]` and `pull_request: branches: [main]` to guard merge requests.
-
-3. **Status Badge in README**:
-   - Configured live workflow badge at the top of this README showing real-time build status.
+1. **Pre-test linter job:** a separate `lint` job runs real static analysis (**oxlint**) on both backend and frontend. The test job declares `needs: lint`, so tests run only after lint passes.
+2. **Pull-request trigger:** the workflow runs on `push` and `pull_request` to `main`, with a `paths` filter so other practicals in this repo don't trigger it.
+3. **Status badge:** a live workflow badge at the top of this README.
+4. **Continuous Deployment:** after lint, test and build all pass on `main`, Docker images are published to GHCR. Pull requests never deploy.
+5. **Extras:** npm dependency caching, `concurrency` to cancel superseded runs, a manual `workflow_dispatch` trigger, and the frontend build kept as an artifact.
 
 ---
 
 ## 📝 Lab Demonstration Workflow
 
-1. **Step 1 - Workflow Setup**: Push `.github/workflows/ci.yml` and test suite to GitHub.
-2. **Step 2 - Deliberate Failure Demonstration**: Change expected status code in test to `500` and push. Observe the **Red X** and failed run in GitHub Actions.
-3. **Step 3 - Corrected Pipeline Demonstration**: Restore expected status code to `200` and push. Observe the pipeline turning green with a **Green Checkmark**.
+1. **Workflow setup:** push the workflow and test suite. The run appears under **Actions → Practical 12 CI/CD** (all green).
+2. **Deliberate failure:** in `backend/server.test.js`, change `expect(res.statusCode).toBe(200)` to `toBe(500)` and push. The **Automated Tests** job fails with a **red X**, and Build and Deploy are skipped.
+3. **Fix:** change it back to `200` and push. The pipeline turns green and the images are redeployed.
