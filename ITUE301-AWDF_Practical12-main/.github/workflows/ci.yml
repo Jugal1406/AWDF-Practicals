@@ -1,6 +1,10 @@
 
 name: CI Pipeline
 
+# ITUE301: Advanced Web Development Frameworks
+# Practical 12: CI/CD Pipeline with GitHub Actions
+# Student: Jugal Kshatriya (24CS042)
+
 on:
   push:
     branches: [main]
@@ -16,7 +20,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js Runtime
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -27,7 +31,7 @@ jobs:
         working-directory: ./ITUE301-AWDF_Practical12-main/backend
         run: npm ci
 
-      - name: Run Linter
+      - name: Run Linter & Static Analysis
         working-directory: ./ITUE301-AWDF_Practical12-main/backend
         run: npm run lint
 
@@ -40,7 +44,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js Runtime
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -51,7 +55,7 @@ jobs:
         working-directory: ./ITUE301-AWDF_Practical12-main/backend
         run: npm ci
 
-      - name: Execute Automated Tests
+      - name: Execute Automated Test Suite
         working-directory: ./ITUE301-AWDF_Practical12-main/backend
         run: npm test
         env:
@@ -62,5 +66,8 @@ jobs:
       - name: Pipeline Status Summary
         if: always()
         run: |
+          echo "=========================================="
           echo "Practical 12 CI Pipeline Completed"
+          echo "Student: Jugal Kshatriya (24CS042)"
           echo "Test Job Status: ${{ job.status }}"
+          echo "=========================================="
