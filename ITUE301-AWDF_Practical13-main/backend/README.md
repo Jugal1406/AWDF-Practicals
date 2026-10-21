@@ -1,4 +1,4 @@
-﻿# ITUE301 - Advanced Web Development Frameworks
+# ITUE301 - Advanced Web Development Frameworks
 ## Practical 5: MongoDB Integration and Schema Design with Mongoose
 
 ### Student Details

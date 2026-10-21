@@ -1,4 +1,4 @@
-﻿# Practical 13: AI API Integration into a Web Application
+# Practical 13: AI API Integration into a Web Application
 ## Academic Viva Report & Technical Analysis
 
 **Course**: Advanced Web Development Frameworks (ITUE301)  
@@ -7,7 +7,7 @@
 **Department**: Computer Science and Engineering  
 **Institute**: Chandubhai S. Patel Institute of Technology (CSPIT), CHARUSAT  
 **Date**: October 2026  
-**Repository**: [Jugal1406/ITUE301-AWDF_Practical13](https://github.com/Jugal1406/ITUE301-AWDF_Practical13)
+**Repository**: [Jugal1406/AWDF-Practicals](https://github.com/Jugal1406/AWDF-Practicals/tree/main/ITUE301-AWDF_Practical13-main)
 
 ---
 
@@ -26,7 +26,7 @@ Rather than exposing API credentials in browser network requests or depending ri
 |                           REACT FRONTEND (Vite)                         |
 |  - User inputs Task Title: "Build Docker Multi-Stage Container"        |
 |  - Clicks: "✨ Generate with Gemini AI"                                  |
-|  - Shows active loading spinner & enforces 30s client cooldown          |
+|  - Shows loading spinner & a per-task 60s cooldown countdown           |
 +------------------------------------+------------------------------------+
                                      |
                                      | HTTP POST /api/ai/generate-description
@@ -34,7 +34,7 @@ Rather than exposing API credentials in browser network requests or depending ri
                                      v
 +------------------------------------+------------------------------------+
 |                          EXPRESS BACKEND (Node.js)                      |
-|  1. Intercepts request & checks Rate Limiter (30s window per client)    |
+|  1. Checks Rate Limiter (1 req per task per minute, per user/IP)       |
 |  2. Reads GEMINI_API_KEY exclusively from server-side .env              |
 |  3. Prepares structured engineering prompt with system instructions     |
 |                                                                         |
@@ -83,8 +83,8 @@ Rather than exposing API credentials in browser network requests or depending ri
   - **Proprietary Credentials**: API keys, database credentials, server certificates, and private tokens.
   - **Internal Network Infrastructure**: Server IP addresses, internal VPC hostnames, or confidential architecture maps.
   - **Regulated Data**: Financial credit card numbers (PCI-DSS) or medical health data (HIPAA).
-* **Governance Mitigation**:
-  - Implement prompt filtering to scrub emails or credentials.
+* **Governance Mitigation (implemented)**:
+  - `sanitiseForAI()` in `aiService.js` redacts email addresses and phone numbers, caps titles at 200 characters, and neutralises quote characters before anything is sent to Gemini (covered by Test 13).
   - Enforce user consent with a prominent UI disclaimer stating: *"Suggestions are AI-generated and must be reviewed prior to task submission."*
 
 ---
@@ -94,14 +94,14 @@ Rather than exposing API credentials in browser network requests or depending ri
 | Supplementary Problem | Requirement | Implementation in Code |
 | :--- | :--- | :--- |
 | **Supplementary 1** | Add a loading state on the frontend while waiting for the AI response | Pulsing loading spinner rendered on the button with text `Generating AI Suggestion...` and form controls disabled while `aiGenerating === true`. |
-| **Supplementary 2** | Add a rate limit (max 1 AI request per task per minute) to avoid excessive API usage | Backend sliding window rate limiter in `aiService.js` (30s cooldown per client/IP) returning HTTP 429 and countdown timer in React UI. |
+| **Supplementary 2** | Add a rate limit (max 1 AI request per task per minute) to avoid excessive API usage | `checkRateLimit()` in `aiService.js`: 60s window keyed by *(verified JWT user or IP) + normalised title*, so the same task is blocked but other tasks are not. Returns HTTP 429 with `waitSeconds`, and the React button shows a per-task countdown. A client-supplied header is deliberately **not** trusted, since it could be changed per request to bypass the limit. |
 | **Supplementary 3** | Display a clear disclaimer in the UI noting content is AI-generated | Visual alert banner rendered below description input and inside `AIMonitor.jsx` with full user editability. |
 
 ---
 
 ## 5. Automated Verification & Test Coverage
 
-All 9 automated Jest and Supertest integration tests passed:
+All 13 automated Jest and Supertest tests pass (they force the offline fallback, so CI never calls the real Gemini API):
 - `GET /`: Validates server metadata and Student ID `24CS042`.
 - `GET /health`: Verifies microservice health and AI service readiness.
 - `GET /events/history`: Validates decoupled event listener telemetry.
@@ -110,4 +110,8 @@ All 9 automated Jest and Supertest integration tests passed:
 - `POST /api/ai/generate-description`: Validates 200 OK with description, priority, and disclaimer.
 - `POST /api/ai/generate-description` (Validation): Verifies 400 Bad Request on missing title.
 - `POST /api/ai/generate-description` (Graceful Fallback): Verifies 0 crashes when key is unconfigured.
-- `POST /api/ai/generate-description` (Rate Limiting): Verifies HTTP 429 when consecutive calls are made within cooldown.
+- `POST /api/ai/generate-description` (Rate Limiting): same task twice within a minute → 429. A different task → 200.
+- Rate limit cannot be bypassed by changing the `x-client-id` header.
+- Two different logged-in users are limited independently.
+- Titles over 200 characters → 400.
+- `sanitiseForAI` redacts emails and phone numbers.

@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 
 export default function CIMonitor() {
   const [activeTab, setActiveTab] = useState('pipeline');
@@ -50,7 +50,7 @@ export default function CIMonitor() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           {/* GitHub Actions Live Badge */}
           <a
-            href="https://github.com/Jugal1406/ITUE301-AWDF_Practical13/actions/workflows/ci.yml"
+            href="https://github.com/Jugal1406/AWDF-Practicals/actions/workflows/practical13-ci.yml"
             target="_blank"
             rel="noopener noreferrer"
             style={{ textDecoration: 'none' }}
@@ -73,7 +73,7 @@ export default function CIMonitor() {
           </a>
 
           <a
-            href="https://github.com/Jugal1406/ITUE301-AWDF_Practical13/actions"
+            href="https://github.com/Jugal1406/AWDF-Practicals/actions/workflows/practical13-ci.yml"
             target="_blank"
             rel="noopener noreferrer"
             style={{

@@ -1,4 +1,4 @@
-﻿# Practical 11: Containerization with Docker and Docker Compose
+# Practical 11: Containerization with Docker and Docker Compose
 **Course**: Advanced Web Development Frameworks (ITUE301)  
 **Student**: Jugal Kshatriya (ID: 24CS042)  
 **Department**: Department of Computer Science & Engineering, CSPIT, CHARUSAT  

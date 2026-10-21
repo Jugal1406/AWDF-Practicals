@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getHealth, getApiOverview } from '../api';
 
 export default function DockerMonitor() {

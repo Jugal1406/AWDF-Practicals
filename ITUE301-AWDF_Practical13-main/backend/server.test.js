@@ -1,11 +1,17 @@
-﻿// ==============================================================================
-// ITUE301: Advanced Web Development Frameworks - Practical 12
+// ==============================================================================
+// ITUE301: Advanced Web Development Frameworks - Practical 13
 // Student: Jugal Kshatriya (ID: 24CS042)
-// Automated API Test Suite for CI/CD Pipeline with GitHub Actions
+// Automated API tests: core API (P12) + AI integration (P13)
 // ==============================================================================
 
 const request = require('supertest');
+const jwt = require('jsonwebtoken');
 const app = require('./server');
+const { resetRateLimits, sanitiseForAI } = require('./aiService');
+
+// Tests must never call the real Gemini API: force the graceful-fallback path.
+delete process.env.GEMINI_API_KEY;
+beforeEach(() => resetRateLimits());
 
 describe('Practical 12: CI/CD Automated Test Pipeline', () => {
 
@@ -87,23 +93,66 @@ describe('Practical 12: CI/CD Automated Test Pipeline', () => {
     expect(res.body.suggestedPriority).toMatch(/^(low|medium|high)$/);
   }, 15000);
 
-  // Test 9 (Supplementary Problem 2): Rate limiting returns 429 on rapid consecutive requests
-  test('POST /api/ai/generate-description enforces rate limiting (Supplementary Problem 2)', async () => {
-    // First request
-    const firstRes = await request(app)
+  // Test 9 (Supplementary Problem 2): same task twice within a minute -> 429
+  test('POST /api/ai/generate-description allows 1 request per task per minute', async () => {
+    const first = await request(app)
       .post('/api/ai/generate-description')
-      .set('x-client-id', 'test-rate-limit-user-1')
       .send({ title: 'Setup GitHub Actions CI' });
-    expect(firstRes.statusCode).toBe(200);
+    expect(first.statusCode).toBe(200);
 
-    // Second immediate request from same client -> rate limit triggered
-    const secondRes = await request(app)
+    // Same task (different case/spacing is still the same task) -> blocked
+    const second = await request(app)
       .post('/api/ai/generate-description')
-      .set('x-client-id', 'test-rate-limit-user-1')
-      .send({ title: 'Setup GitHub Actions CI Again' });
-    expect(secondRes.statusCode).toBe(429);
-    expect(secondRes.body).toHaveProperty('rateLimited', true);
-    expect(secondRes.body).toHaveProperty('waitSeconds');
-  }, 15000);
-});
+      .send({ title: '  setup   github actions CI ' });
+    expect(second.statusCode).toBe(429);
+    expect(second.body).toHaveProperty('rateLimited', true);
+    expect(second.body.waitSeconds).toBeGreaterThan(0);
+    expect(second.body.waitSeconds).toBeLessThanOrEqual(60);
 
+    // A different task is not blocked
+    const other = await request(app)
+      .post('/api/ai/generate-description')
+      .send({ title: 'Write README for deployment' });
+    expect(other.statusCode).toBe(200);
+  });
+
+  // Test 10: a spoofed x-client-id header must NOT bypass the limiter
+  test('rate limit cannot be bypassed by changing x-client-id header', async () => {
+    await request(app).post('/api/ai/generate-description')
+      .set('x-client-id', 'attacker-1').send({ title: 'Spam task' });
+    const res = await request(app).post('/api/ai/generate-description')
+      .set('x-client-id', 'attacker-2').send({ title: 'Spam task' });
+    expect(res.statusCode).toBe(429);
+  });
+
+  // Test 11: logged-in users are limited per user, not per shared IP
+  test('different authenticated users are rate-limited independently', async () => {
+    const secret = process.env.JWT_SECRET || 'supersecretjwtkey_24cs042_jugal_practical10';
+    const tokenA = jwt.sign({ id: 'userA' }, secret);
+    const tokenB = jwt.sign({ id: 'userB' }, secret);
+    const a = await request(app).post('/api/ai/generate-description')
+      .set('Authorization', `Bearer ${tokenA}`).send({ title: 'Shared task name' });
+    const b = await request(app).post('/api/ai/generate-description')
+      .set('Authorization', `Bearer ${tokenB}`).send({ title: 'Shared task name' });
+    expect(a.statusCode).toBe(200);
+    expect(b.statusCode).toBe(200);
+  });
+
+  // Test 12: overly long titles are rejected before reaching the AI provider
+  test('POST /api/ai/generate-description returns 400 for titles over 200 chars', async () => {
+    const res = await request(app)
+      .post('/api/ai/generate-description')
+      .send({ title: 'x'.repeat(201) });
+    expect(res.statusCode).toBe(400);
+  });
+
+  // Test 13 (Key Question 3): personal data is redacted before it is sent to AI
+  test('sanitiseForAI redacts emails and phone numbers', () => {
+    const out = sanitiseForAI('Call 9876543210 or mail jugal@charusat.edu.in about "login"');
+    expect(out).not.toContain('9876543210');
+    expect(out).not.toContain('jugal@charusat.edu.in');
+    expect(out).toContain('[number]');
+    expect(out).toContain('[email]');
+    expect(out).not.toContain('"');
+  });
+});

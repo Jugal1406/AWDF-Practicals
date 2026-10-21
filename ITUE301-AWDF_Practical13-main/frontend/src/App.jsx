@@ -1,4 +1,4 @@
-﻿import React, { useState, Suspense } from 'react';
+import React, { useState, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import NavBar from './components/NavBar';
 import Footer from './components/Footer';
@@ -131,7 +131,7 @@ function App() {
             <span className="opt-chunk-tag">Gemini 1.5 Flash</span>
             <span className="opt-chunk-tag">Backend-Only Key (.env)</span>
             <span className="opt-chunk-tag">Graceful Fallback</span>
-            <span className="opt-chunk-tag">30s Rate Limiter</span>
+            <span className="opt-chunk-tag">1 req / task / min</span>
           </div>
         </div>
 

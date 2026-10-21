@@ -193,6 +193,11 @@ export const generateAIDescription = async (title) => {
     headers: getAuthHeaders(),
     body: JSON.stringify({ title }),
   });
+  // 429 is an expected answer (rate limit), not a failure: hand it to the UI
+  // so it can show the countdown instead of a generic error toast.
+  if (res.status === 429) {
+    return res.json();
+  }
   return handleResponse(res);
 };
 

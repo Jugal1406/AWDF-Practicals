@@ -1,9 +1,9 @@
-﻿# Practical 12: CI/CD Pipeline with GitHub Actions
+# Practical 12: CI/CD Pipeline with GitHub Actions
 **Course**: Advanced Web Development Frameworks (ITUE301)  
 **Student**: Jugal Kshatriya (ID: 24CS042)  
 **Department**: Department of Computer Science & Engineering, CSPIT, CHARUSAT  
-**Repository**: [Jugal1406/ITUE301-AWDF_Practical12](https://github.com/Jugal1406/ITUE301-AWDF_Practical12)  
-**Pipeline Status**: [![CI Pipeline](https://github.com/Jugal1406/ITUE301-AWDF_Practical12/actions/workflows/ci.yml/badge.svg)](https://github.com/Jugal1406/ITUE301-AWDF_Practical12/actions/workflows/ci.yml)
+**Repository**: [Jugal1406/AWDF-Practicals](https://github.com/Jugal1406/AWDF-Practicals/tree/main/ITUE301-AWDF_Practical13-main)  
+**Pipeline Status**: [![CI Pipeline](https://github.com/Jugal1406/AWDF-Practicals/actions/workflows/practical13-ci.yml/badge.svg)](https://github.com/Jugal1406/AWDF-Practicals/actions/workflows/practical13-ci.yml)
 
 ---
 

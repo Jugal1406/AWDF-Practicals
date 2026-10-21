@@ -1,6 +1,6 @@
-﻿# Practical 13: AI API Integration into a Web Application
+# Practical 13: AI API Integration into a Web Application
 
-[![CI Pipeline](https://github.com/Jugal1406/ITUE301-AWDF_Practical13/actions/workflows/ci.yml/badge.svg)](https://github.com/Jugal1406/ITUE301-AWDF_Practical13/actions/workflows/ci.yml)
+[![CI Pipeline](https://github.com/Jugal1406/AWDF-Practicals/actions/workflows/practical13-ci.yml/badge.svg)](https://github.com/Jugal1406/AWDF-Practicals/actions/workflows/practical13-ci.yml)
 
 **Course**: Advanced Web Development Frameworks (ITUE301)  
 **Department**: Department of Computer Science and Engineering  
@@ -8,7 +8,7 @@
 **Academic Year**: 2025–2026  
 **Student Name**: Jugal Kshatriya  
 **Student ID**: 24CS042  
-**GitHub Repository**: [Jugal1406/ITUE301-AWDF_Practical13](https://github.com/Jugal1406/ITUE301-AWDF_Practical13)
+**GitHub Repository**: [Jugal1406/AWDF-Practicals](https://github.com/Jugal1406/AWDF-Practicals/tree/main/ITUE301-AWDF_Practical13-main)
 
 ---
 
@@ -49,7 +49,7 @@ React Frontend (Vite)
   ▼
 Express Backend (/api/ai/generate-description)
   │
-  ├── 1. Rate Limiter (30s cooldown per client/IP)
+  ├── 1. Rate Limiter (1 request per task per minute, keyed by JWT user or IP)
   ├── 2. GEMINI_API_KEY stored server-side only (.env)
   │
   ▼
@@ -94,7 +94,7 @@ npm test
 2. **Graceful Degradation**: If the API key is missing or invalid, or if the network times out, the backend catches the error and generates an offline heuristic fallback template.
 3. **Editable Suggestions**: The AI response is pre-filled into an editable textarea, giving the user complete editorial control.
 4. **Supplementary Problem 1**: Visual loading state with pulsing spinner while waiting for the AI response.
-5. **Supplementary Problem 2**: Rate limiting (30s sliding window) returning HTTP 429 to avoid excessive API usage.
+5. **Supplementary Problem 2**: Rate limiting (max 1 AI request per task per minute) returning HTTP 429 to avoid excessive API usage. The key is the verified JWT user (or IP when logged out) plus the normalised task title, so it cannot be bypassed with a spoofed header.
 6. **Supplementary Problem 3**: Visible disclaimer in the UI stating that suggestions are AI-generated and must be reviewed.
 7. **AIMonitor Sandbox**: Dedicated interactive component for testing prompts, inspecting latency, and viewing governance policies.
 
@@ -107,7 +107,7 @@ npm test
 | **1** | **Backend .env Configuration** | `backend/.env` in VS Code / Editor | Shows `GEMINI_API_KEY` configured securely on the server-side without being committed to Git (`.gitignore`). |
 | **2** | **Task Form & AI Generate Button** | `http://localhost:5173/tasks` | Task creation form showing task title and the "✨ Generate with Gemini AI" button with pulsing loading indicator. |
 | **3** | **AI Suggestion & Disclaimer Banner** | `http://localhost:5173/tasks` | Editable description populated with Gemini AI suggestion, priority set, and visible Responsible AI disclaimer. |
-| **4** | **Rate Limiter Cooldown** | `http://localhost:5173/tasks` | Clicking generate again within 30s displays the rate limit warning and countdown timer (`Rate Limit (28s)`). |
+| **4** | **Rate Limiter Cooldown** | `http://localhost:5173/tasks` | Clicking generate again for the same task within 60s displays the rate limit warning and countdown timer (`Rate Limit (28s)`). |
 | **5** | **Graceful Degradation Test** | `http://localhost:5173/tasks` | Testing with invalid/missing key shows the offline fallback template banner without crashing the application. |
 | **6** | **AI Architecture & Governance Monitor** | `http://localhost:5173/tasks` (AIMonitor) | Shows the Interactive AI Sandbox, latency metrics, and Data Governance compliance checklist. |
 | **7** | **Automated Test Suite (Jest)** | Terminal: `npm test` in `backend/` | Terminal output showing all 9 integration tests passing (including AI generation, rate limiting, and fallback). |

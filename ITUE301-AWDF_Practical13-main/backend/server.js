@@ -1,4 +1,4 @@
-﻿require('dotenv').config();
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -9,7 +9,7 @@ const auth = require('./middleware/auth');
 const cache = require('./cache');
 const taskEvents = require('./listeners'); // Registers task-created, task-deleted, and error listeners
 const { validateTask, validateRegister, validateLogin } = require('./middleware/validate');
-const { generateTaskDescription } = require('./aiService');
+const { generateTaskDescription, MAX_TITLE_LENGTH } = require('./aiService');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -499,11 +499,25 @@ const handleAIGenerate = async (req, res) => {
     });
   }
 
-  // Rate limiting key: custom client ID, authenticated user ID, or client IP
-  const clientId = req.headers['x-client-id']
-    || (req.headers['authorization'] ? req.headers['authorization'].slice(-12) : null)
-    || req.ip
-    || 'client-ip';
+  if (title.trim().length > MAX_TITLE_LENGTH) {
+    return res.status(400).json({
+      success: false,
+      error: `Task title must be ${MAX_TITLE_LENGTH} characters or fewer`,
+    });
+  }
+
+  // Rate-limit identity: the verified JWT user if logged in, otherwise the IP.
+  // Never trust a client-supplied header here - it could be changed per request
+  // to bypass the limit.
+  let clientId = `ip:${req.ip}`;
+  const authHeader = req.headers.authorization || '';
+  if (authHeader.startsWith('Bearer ')) {
+    try {
+      clientId = `user:${jwt.verify(authHeader.slice(7), JWT_SECRET).id}`;
+    } catch {
+      // invalid/expired token -> fall back to IP
+    }
+  }
 
   try {
     const aiResponse = await generateTaskDescription(title, clientId);
@@ -549,7 +563,7 @@ app.get('/health', (req, res) => {
       model: 'gemini-1.5-flash',
       isKeyConfigured: hasGeminiKey,
       gracefulDegradation: 'ACTIVE (Fallback heuristic engine enabled if API fails)',
-      rateLimiter: '30s sliding window per user',
+      rateLimiter: '1 request per task per minute (per user, or per IP if logged out)',
     },
     database: {
       status: isDbConnected ? 'CONNECTED' : 'DISCONNECTED',
@@ -571,7 +585,7 @@ app.get('/', (req, res) => {
       keyStatus: hasGeminiKey ? 'CONFIGURED' : 'UNCONFIGURED (Graceful Degradation Active)',
       endpoint: 'POST /api/ai/generate-description',
       aliasEndpoint: 'POST /tasks/ai-generate',
-      rateLimiter: 'Max 1 request per task per 30 seconds',
+      rateLimiter: 'Max 1 request per task per minute',
       gracefulDegradation: 'Automatic heuristic fallback on quota/offline/invalid key',
     },
     healthEndpoint: 'GET /health',
