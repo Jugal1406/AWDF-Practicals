@@ -5,7 +5,7 @@ name: CI Pipeline
 # CSPIT - Department of Computer Science & Engineering
 # ITUE301: Advanced Web Development Frameworks
 # Practical 12: CI/CD Pipeline with GitHub Actions
-# Student: Vivek Maheshwari (ID: 24CS050)
+# Student: Jugal Kshatriya (ID: 24CS042)
 # ==============================================================================
 
 # Supplementary Problem 2: Configure trigger for both push and pull_request targeting main
@@ -72,6 +72,6 @@ jobs:
         run: |
           echo "=========================================="
           echo "Practical 12 CI Pipeline Completed"
-          echo "Student: Vivek Maheshwari (24CS050)"
+          echo "Student: Jugal Kshatriya (24CS042)"
           echo "Test Job Status: ${{ job.status }}"
           echo "=========================================="
