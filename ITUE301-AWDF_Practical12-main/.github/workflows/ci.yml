@@ -1,14 +1,6 @@
+
 name: CI Pipeline
 
-# ==============================================================================
-# Charotar University of Science and Technology (CHARUSAT)
-# CSPIT - Department of Computer Science & Engineering
-# ITUE301: Advanced Web Development Frameworks
-# Practical 12: CI/CD Pipeline with GitHub Actions
-# Student: Jugal Kshatriya (ID: 24CS042)
-# ==============================================================================
-
-# Supplementary Problem 2: Configure trigger for both push and pull_request targeting main
 on:
   push:
     branches: [main]
@@ -16,62 +8,59 @@ on:
     branches: [main]
 
 jobs:
-  # Supplementary Problem 1: First job running code-quality audit and linter before tests
   lint:
     name: Code Quality & Lint Audit
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js Runtime (v20)
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
-          cache-dependency-path: 'backend/package-lock.json'
+          cache: npm
+          cache-dependency-path: ITUE301-AWDF_Practical12-main/backend/package-lock.json
 
       - name: Install Backend Dependencies
-        working-directory: ./backend
+        working-directory: ./ITUE301-AWDF_Practical12-main/backend
         run: npm ci
 
-      - name: Run Linter & Static Analysis
-        working-directory: ./backend
+      - name: Run Linter
+        working-directory: ./ITUE301-AWDF_Practical12-main/backend
         run: npm run lint
 
-  # Core Job: Build and Automated Testing
   build-and-test:
     name: Build & Automated Tests
     runs-on: ubuntu-latest
-    needs: lint # Ensures lint passes before running unit/integration tests
+    needs: lint
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js Runtime (v20)
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
-          cache-dependency-path: 'backend/package-lock.json'
+          cache: npm
+          cache-dependency-path: ITUE301-AWDF_Practical12-main/backend/package-lock.json
 
-      - name: Install Dependencies (npm install)
-        working-directory: ./backend
+      - name: Install Backend Dependencies
+        working-directory: ./ITUE301-AWDF_Practical12-main/backend
         run: npm ci
 
-      - name: Execute Automated Test Suite (Jest & Supertest)
-        working-directory: ./backend
+      - name: Execute Automated Tests
+        working-directory: ./ITUE301-AWDF_Practical12-main/backend
         run: npm test
         env:
           NODE_ENV: test
-          JWT_SECRET: supersecret_ci_test_key_24cs050
+          JWT_SECRET: supersecret_ci_test_key_24cs042
           PORT: 5000
 
       - name: Pipeline Status Summary
         if: always()
         run: |
-          echo "=========================================="
           echo "Practical 12 CI Pipeline Completed"
-          echo "Student: Jugal Kshatriya (24CS042)"
           echo "Test Job Status: ${{ job.status }}"
-          echo "=========================================="
