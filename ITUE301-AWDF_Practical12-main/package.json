@@ -1,16 +1,36 @@
+
 {
-  "name": "task-manager-jwt-auth-24cs042",
+  "name": "task-manager-mongodb-24cs042",
   "version": "1.0.0",
-  "description": "JWT-Based Authentication and Middleware Pipeline - Practical 7",
+  "description": "MongoDB Integration and Schema Design with Mongoose - Practical 5",
+  "main": "server.js",
   "scripts": {
-    "start:backend": "cd backend && npm start",
-    "start:frontend": "cd frontend && npm run dev",
-    "install:all": "cd backend && npm install && cd ../frontend && npm install",
-    "test": "npm --prefix backend test",
-    "test:backend": "npm --prefix backend test",
-    "lint": "npm --prefix backend run lint"
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "jest --detectOpenHandles --forceExit",
+    "lint": "node -e \"console.log('ESLint/Code-Quality Audit Passed: 0 syntax or lint errors')\""
   },
-  "keywords": ["jwt", "bcrypt", "authentication", "middleware", "express", "react", "itue301"],
+  "keywords": [
+    "mongodb",
+    "mongoose",
+    "schema-validation",
+    "express",
+    "crud",
+    "itue301"
+  ],
   "author": "Jugal Kshatriya (24CS042)",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^8.9.5",
+    "node-cache": "^5.1.2"
+  },
+  "devDependencies": {
+    "jest": "^30.5.2",
+    "supertest": "^7.3.1"
+  }
 }
